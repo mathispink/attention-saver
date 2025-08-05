@@ -79,17 +79,21 @@ with h5py.File("attention_matrices.h5", "r") as f:
 
 ## FAQ
 
-    **Q: Can I run this on any HuggingFace causal LLM?**
-    **A**: Yes, as long as your model implements the standard HuggingFace attention interface.
+**Q: Can I run this on any HuggingFace causal LLM?**
 
-    **Q: Can I save multiple statistics at once?**
-    **A**: Yes, pass a list of callables. Each one will be saved as a separate column in the output HDF5 dataset.
+**A**: Yes, as long as your model implements the standard HuggingFace attention interface.
 
-    **Q: Is there a CLI?**
-    **A**: No, but you can run the examples in Python or adapt the code in a notebook.
+**Q: Can I save multiple statistics at once?**
 
-    **Q: Does this work with FlashAttention2?**
-    **A**: Yes! This is agnostic to the attention implementation used by the model.
+**A**: Yes, pass a list of callables. Each one will be saved as a separate column in the output HDF5 dataset.
+
+**Q: Is there a CLI?**
+
+**A**: No, but you can run the examples in Python or adapt the code in a notebook.
+
+**Q: Does this work with FlashAttention2?**
+
+**A**: Yes! This is agnostic to the attention implementation used by the model.
 
 ## License
 
@@ -104,4 +108,5 @@ Apache 2.0
   url = {https://github.com/MathisPink/attention_saver},
 }
 ```
+
 
