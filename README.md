@@ -67,13 +67,12 @@ with AttentionSaver(
     layer_ids=[4, 5, 6],
     output_file="attention_matrices.h5",
     compute_softmax=True,
-    dtype="float16",
+    dtype="float16", # only used for saving, not for the forward pass
     save_statistic_only=False,
     row_wise_statistics=[
         lambda p: -np.sum(p * np.log2(p + 1e-9)),  # entropy
         lambda p: np.sum(np.abs(p - 1.0 / len(p))), # L1 from uniform
     ],
-    verbose=True,
 ):
     model(**inputs)
 ```
@@ -142,4 +141,5 @@ If you use this tool in your research, please cite:
 
 **Questions, suggestions, or issues?**  
 Please open an issue or PR on GitHub.
+
 
