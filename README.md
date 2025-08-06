@@ -1,35 +1,54 @@
 # Attention Saver
 
-![logo](docs/attention_matrix.png) <!-- Add a logo if desired -->
-
-**Ultra-long sequence attention matrix and statistics extractor for HuggingFace LLMs.**
+**Extract and analyze ultra-long-sequence attention matrices from HuggingFace LLMs — efficiently and at scale!**
 
 ---
 
-## ✨ Overview
+## Motivation
 
-Attention Saver lets you **extract entire attention matrices** or **row-wise statistics** (e.g. entropy) from any HuggingFace causal LLM layer—**even for 100,000+ tokens**—without running out of GPU memory.
+Large language models are increasingly evaluated on long-context tasks, but extracting their full attention patterns over 100k+ tokens can quickly overwhelm GPU memory when using an eager attention implementation, and is impossible when using memory-efficient attention kernels as they never hold the full attention matrix in memory. For researchers aiming to analyze, visualize, or quantify attention in detail—across any layer or head—there's a need for a workflow that is both scalable and hackable. Attention Saver fills this gap!
 
-- 🚀 **Scale**: Handles extraction of attention patterns for large context windows (100k+) (if your disk is big enough!)
-- 🧑‍🔬 **Research-focused**: Plug in any row-wise statistic for per-row insights in attention patterns
-- 🪄 **Simple API**: Just a context manager around your regular forward pass for any model
-- 💾 **Efficient**: Saves to HDF5 on disk, not in RAM
+**Attention Saver** provides a practical toolkit to:
+
+- Extract raw attention matrices (for arbitrarily long sequences)
+- Save directly to disk in HDF5 format, sidestepping RAM and GPU limits
+- Compute and save custom per-row statistics per attention head and layer
+
+
+---
+
+## Features
+
+- **Handles long context windows**: Works with sequences >100,000 tokens (disk space permitting)
+- **Layer/head selection**: Focus on specific layers of interest
+- **Custom statistics**: Plug in Python/numpy functions for per-row analysis
+- **Simple interface**: Wraps around standard HuggingFace forward passes
+- **No RAM bottleneck**: All results are streamed to disk row by row
 
 ---
 
 ## Installation
 
+Install directly from GitHub:
+
 ```bash
 pip install git+https://github.com/MathisPink/attention_saver.git
+```
 
-or clone and install locally:
+Or clone and install locally:
 
+```bash
 git clone https://github.com/MathisPink/attention_saver.git
 cd attention_saver
 pip install .
 ```
 
-## Usage Example
+---
+
+## Quick Start
+
+Here’s an example using a HuggingFace causal LLM:
+
 ```python
 import numpy as np
 from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -40,7 +59,7 @@ model_name = "meta-llama/Llama-3.2-1B"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModelForCausalLM.from_pretrained(model_name, attn_implementation="sdpa").to("cuda")
 
-text = "The attention matrix will be huge! " * 10000  # About 60k tokens
+text = "The attention matrix will be huge! " * 10000  # ~60k tokens
 inputs = tokenizer(text, return_tensors="pt").to(model.device)
 
 with AttentionSaver(
@@ -49,17 +68,21 @@ with AttentionSaver(
     output_file="attention_matrices.h5",
     compute_softmax=True,
     dtype="float16",
-    save_statistic_only=False,  # Set True to save only the below statistics of each attention row
+    save_statistic_only=False,
     row_wise_statistics=[
         lambda p: -np.sum(p * np.log2(p + 1e-9)),  # entropy
-        lambda p: np.sum(np.abs(p - 1.0 / len(p))), # L1 distance from uniform
+        lambda p: np.sum(np.abs(p - 1.0 / len(p))), # L1 from uniform
     ],
     verbose=True,
 ):
     model(**inputs)
 ```
 
-## Visualizing Results
+---
+
+## Accessing and Visualizing Output
+
+Attention matrices and statistics are stored in HDF5 format for easy downstream analysis:
 
 ```python
 import h5py
@@ -75,31 +98,37 @@ with h5py.File("attention_matrices.h5", "r") as f:
     plt.show()
 ```
 
-<div align="center"> <img src="docs/attention_matrix.png" width="400"/> <img src="docs/attention_matrix.png" width="400"/> </div>
+---
 
-## FAQ
+## Frequently Asked Questions
 
-**Q: Can I run this on any HuggingFace causal LLM?**
+**Q: Which models are supported?**  
+A: Any HuggingFace causal LLM using the standard attention interfaces (eager, sdpa, flashattn, flex-attn).
 
-**A**: Yes, as long as your model implements the standard HuggingFace attention interface.
+**Q: Can I compute several statistics at once?**  
+A: Yes—pass a list of callables to `row_wise_statistics`. Each function will populate a column in the HDF5 output.
 
-**Q: Can I save multiple statistics at once?**
+**Q: Is there a command-line tool?**  
+A: No CLI is included. All usage is via Python, making it easy to integrate into experiments and notebooks.
 
-**A**: Yes, pass a list of callables. Each one will be saved as a separate column in the output HDF5 dataset.
+**Q: FlashAttention2 or custom attention implementations?**  
+A: Yes, as long as the HuggingFace attention interface is respected. The method is agnostic to attention implementation.
 
-**Q: Is there a CLI?**
+**Q: Is sparse attention supported?**
+A: No, currently, only full self-attention is supported.
 
-**A**: No, but you can run the examples in Python or adapt the code in a notebook.
-
-**Q: Does this work with FlashAttention2?**
-
-**A**: Yes! This is agnostic to the attention implementation used by the model.
+---
 
 ## License
 
 Apache 2.0
 
+---
+
 ## Citation
+
+If you use this tool in your research, please cite:
+
 ```bibtex
 @software{Pink2025attentionsaver,
   author = {Mathis Pink},
@@ -109,4 +138,8 @@ Apache 2.0
 }
 ```
 
+---
+
+**Questions, suggestions, or issues?**  
+Please open an issue or PR on GitHub.
 
